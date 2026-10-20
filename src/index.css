@@ -8,19 +8,16 @@
   --color-brand-ink: #252b38;
   --color-brand-muted: #7a8291;
   --color-brand-line: #e6e8ec;
+
+  --color-satu-orange: #e8521d;
+  --color-satu-crimson: #8e161c;
+  --color-satu-dark: #4a2017;
+  --color-satu-bg: #f4f5f7;
 }
 
 body {
   font-family: var(--font-sans);
   color: #252b38;
-  background-color: #fff;
+  background-color: #f4f5f7;
   min-height: 100vh;
 }
-
-body {
-  font-family: var(--font-sans);
-  color: #252b38;
-  background-color: #fff;
-  min-height: 100vh;
-}
-
