@@ -3,14 +3,7 @@ import {
   Wrench,
   Search,
   CheckCircle2,
-  Clock,
-  AlertTriangle,
-  FileText,
   Image as ImageIcon,
-  Check,
-  ChevronRight,
-  ShieldAlert,
-  ArrowRight
 } from 'lucide-react'
 import StatusBadge from '../common/StatusBadge.jsx'
 import Modal from '../common/Modal.jsx'

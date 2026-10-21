@@ -6,11 +6,7 @@ import {
   AlertTriangle,
   Clock,
   Building2,
-  MessageSquare,
   Search,
-  Filter,
-  Check,
-  X,
   RefreshCw,
   Loader2
 } from 'lucide-react'
@@ -56,11 +52,7 @@ function ApprovalJadwalSection({
 
   // ── Fetch Data dari API ───────────────────────────────────────────
   const fetchPengajuan = useCallback(
-    async (currentPage, currentFilterStatus, currentSearch, isInitial = false) => {
-      if (isInitial) setLoading(true)
-      else setFetching(true)
-      setFetchError(null)
-
+    async (currentPage, currentFilterStatus, currentSearch) => {
       try {
         const params = {
           page: currentPage,
@@ -88,7 +80,7 @@ function ApprovalJadwalSection({
           setPendingCount(localPending)
           if (onCountChange) onCountChange(localPending)
         }
-      } catch (err) {
+      } catch {
         setFetchError('Gagal memuat data pengajuan jadwal dosen. Silakan coba lagi.')
         setData([])
         setMeta(null)
@@ -100,23 +92,21 @@ function ApprovalJadwalSection({
     [limit, onCountChange]
   )
 
-  // ── Initial Fetch ─────────────────────────────────────────────────
+  // ── Fetch saat halaman atau filter berubah ────────────────────────
   useEffect(() => {
-    fetchPengajuan(1, 'ALL', '', true)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    const timer = window.setTimeout(() => {
+      setFetching(true)
+      setFetchError(null)
+      fetchPengajuan(page, filterStatus, searchDosen)
+    }, 0)
 
-  // ── Re-fetch saat page berubah ────────────────────────────────────
-  useEffect(() => {
-    fetchPengajuan(page, filterStatus, searchDosen)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page])
+    return () => window.clearTimeout(timer)
+  }, [page, filterStatus, searchDosen, fetchPengajuan])
 
   // ── Filter Status berubah → reset ke page 1 ──────────────────────
   const handleFilterStatus = (newStatus) => {
     setFilterStatus(newStatus)
     setPage(1)
-    fetchPengajuan(1, newStatus, searchDosen)
   }
 
   // ── Debounce Search Input (400ms) ─────────────────────────────────
@@ -127,7 +117,6 @@ function ApprovalJadwalSection({
     debounceTimer.current = setTimeout(() => {
       setSearchDosen(val)
       setPage(1)
-      fetchPengajuan(1, filterStatus, val)
     }, 400)
   }
 
@@ -140,6 +129,8 @@ function ApprovalJadwalSection({
 
   // ── Refresh manual (setelah submit evaluasi) ──────────────────────
   const refreshData = () => {
+    setFetching(true)
+    setFetchError(null)
     fetchPengajuan(page, filterStatus, searchDosen)
   }
 

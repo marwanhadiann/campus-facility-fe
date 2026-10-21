@@ -1,5 +1,3 @@
-import React from 'react'
-
 const BADGE_STYLES = {
   // Semantic Success: Emerald Green
   TERSEDIA: 'bg-emerald-50 text-emerald-700 border-emerald-200',

@@ -1,16 +1,11 @@
 import { useState } from 'react'
 import {
-  Building2,
   Plus,
   Search,
   Edit2,
   Trash2,
   Package,
-  Layers,
-  ChevronRight,
-  SlidersHorizontal,
   AlertTriangle,
-  ArrowLeft
 } from 'lucide-react'
 import StatusBadge from '../common/StatusBadge.jsx'
 import Modal from '../common/Modal.jsx'

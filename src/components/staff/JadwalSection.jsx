@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   CalendarDays,
   Plus,
@@ -7,7 +7,6 @@ import {
   Building2,
   Clock,
   User,
-  GraduationCap
 } from 'lucide-react'
 import Modal from '../common/Modal.jsx'
 import AlertBanner from '../common/AlertBanner.jsx'
@@ -18,6 +17,22 @@ const HARI_OPTIONS = ['SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU']
 function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
   const [filterHari, setFilterHari] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+  const [kelasList, setKelasList] = useState([])
+  const [kelasError, setKelasError] = useState('')
+
+  useEffect(() => {
+    let active = true
+
+    api.get('/api/kelas')
+      .then(({ data }) => {
+        if (active) setKelasList(data.data || [])
+      })
+      .catch((error) => {
+        if (active) setKelasError(error.response?.data?.message || 'Daftar kelas tidak dapat dimuat.')
+      })
+
+    return () => { active = false }
+  }, [])
 
   // Modal Mata Kuliah
   const [isMkModalOpen, setIsMkModalOpen] = useState(false)
@@ -31,7 +46,7 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
     mata_kuliah_id: '',
     dosen_id: '',
     ruang_id: '',
-    kelas: '',
+    kelas_id: '',
     hari: 'SENIN',
     jam_mulai: '08:00',
     jam_selesai: '10:30',
@@ -78,7 +93,7 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
         mata_kuliah_id: Number(jadwalForm.mata_kuliah_id),
         dosen_id: Number(jadwalForm.dosen_id),
         ruang_id: Number(jadwalForm.ruang_id),
-        kelas: jadwalForm.kelas.trim(),
+        kelas_id: Number(jadwalForm.kelas_id),
         hari: jadwalForm.hari,
         jam_mulai: jadwalForm.jam_mulai,
         jam_selesai: jadwalForm.jam_selesai,
@@ -87,7 +102,7 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
       setFeedbackMsg({
         type: 'success',
         title: 'Jadwal Kuliah Berhasil Ditambahkan',
-        message: `Jadwal perkuliahan untuk kelas ${jadwalForm.kelas} berhasil ditambahkan ke katalog perkuliahan.`,
+        message: `Jadwal perkuliahan untuk kelas ${kelasList.find((kelas) => kelas.id === Number(jadwalForm.kelas_id))?.nama_kelas} berhasil ditambahkan ke katalog perkuliahan.`,
       })
       setIsJadwalModalOpen(false)
       onRefresh()
@@ -114,6 +129,7 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
 
   return (
     <div className="space-y-6">
+      {kelasError && <AlertBanner type="error" message={kelasError} />}
       {/* Toast Feedback */}
       {feedbackMsg && (
         <AlertBanner
@@ -251,7 +267,7 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
                     </td>
                     <td className="px-3 py-3.5 font-bold text-slate-700">
                       <span className="px-2 py-1 rounded-lg bg-orange-50 text-[#e8521d] border border-orange-100 font-mono text-[11px]">
-                        {j.kelas}
+                {j.kelas}
                       </span>
                     </td>
                     <td className="px-4 py-3.5">
@@ -420,14 +436,18 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
               <label className="block text-xs font-bold text-slate-700 mb-1">
                 Kelas <span className="text-rose-500">*</span>
               </label>
-              <input
-                type="text"
+              <select
                 required
-                placeholder="Contoh: TI-4A"
-                value={jadwalForm.kelas}
-                onChange={(e) => setJadwalForm({ ...jadwalForm, kelas: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 uppercase focus:border-[#e8521d] focus:outline-none"
-              />
+                value={jadwalForm.kelas_id}
+                onChange={(e) => setJadwalForm({ ...jadwalForm, kelas_id: e.target.value })}
+                disabled={kelasList.length === 0}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:border-[#e8521d] focus:outline-none disabled:bg-slate-100"
+              >
+                <option value="">{kelasList.length ? 'Pilih Kelas' : 'Belum ada kelas tersedia'}</option>
+                {kelasList.map((kelas) => (
+                  <option key={kelas.id} value={kelas.id}>{kelas.nama_kelas}</option>
+                ))}
+              </select>
             </div>
           </div>
 

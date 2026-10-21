@@ -4,7 +4,6 @@ import {
   Wrench,
   CalendarDays,
   ArrowRight,
-  Clock,
   CheckCircle2,
   AlertCircle
 } from 'lucide-react'
@@ -16,7 +15,6 @@ function OverviewSection({
   riwayatList = [],
   jadwalList = [],
   onNavigate,
-  onOpenApprovalModal,
 }) {
   const ruangTersedia = ruangList.filter((r) => r.status_ruang === 'TERSEDIA').length
   const ruangPerbaikan = ruangList.filter((r) => r.status_ruang === 'DALAM_PERBAIKAN').length

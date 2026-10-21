@@ -1,11 +1,10 @@
-import { Menu, RefreshCw, Calendar, ShieldCheck } from 'lucide-react'
+import { Menu, RefreshCw, Calendar } from 'lucide-react'
 
 function StaffHeader({
   activeMenu,
   onOpenMobile,
   onRefresh,
-  refreshing,
-  user
+  refreshing
 }) {
   const titles = {
     overview: {
@@ -27,6 +26,10 @@ function StaffHeader({
     jadwal: {
       title: 'Jadwal Perkuliahan & Mata Kuliah',
       subtitle: 'Pemetaan jadwal perkuliahan semester berjalan dan katalog mata kuliah',
+    },
+    kelas: {
+      title: 'Master Kelas',
+      subtitle: 'Kelola daftar kelas untuk kebutuhan penjadwalan perkuliahan',
     },
   }
 

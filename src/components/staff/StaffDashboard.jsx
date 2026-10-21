@@ -6,6 +6,7 @@ import RuangFasilitasSection from './RuangFasilitasSection.jsx'
 import ApprovalJadwalSection from './ApprovalJadwalSection.jsx'
 import PengaduanSection from './PengaduanSection.jsx'
 import JadwalSection from './JadwalSection.jsx'
+import KelasSection from './KelasSection.jsx'
 import AlertBanner from '../common/AlertBanner.jsx'
 import api from '../../services/api.js'
 
@@ -29,11 +30,7 @@ function StaffDashboard({ user, onLogout, loggingOut }) {
   const [activeModalItem, setActiveModalItem] = useState(null)
 
   // Fetch data operasional inti (tanpa pengajuan — dihandle ApprovalJadwalSection)
-  const loadDashboardData = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true)
-    else setLoading(true)
-    setErrorBanner(null)
-
+  const loadDashboardData = useCallback(async () => {
     try {
       const [ruangRes, riwayatRes, jadwalRes] = await Promise.allSettled([
         api.get('/api/ruang'),
@@ -50,7 +47,7 @@ function StaffDashboard({ user, onLogout, loggingOut }) {
       if (jadwalRes.status === 'fulfilled') {
         setJadwalList(jadwalRes.value.data.data || [])
       }
-    } catch (err) {
+    } catch {
       setErrorBanner('Beberapa data operasional tidak dapat dimuat. Silakan periksa koneksi atau segarkan data.')
     } finally {
       setLoading(false)
@@ -59,8 +56,15 @@ function StaffDashboard({ user, onLogout, loggingOut }) {
   }, [])
 
   useEffect(() => {
-    loadDashboardData()
+    const timer = window.setTimeout(loadDashboardData, 0)
+    return () => window.clearTimeout(timer)
   }, [loadDashboardData])
+
+  const refreshDashboardData = () => {
+    setRefreshing(true)
+    setErrorBanner(null)
+    loadDashboardData()
+  }
 
   // counts untuk sidebar badge
   const counts = {
@@ -80,7 +84,7 @@ function StaffDashboard({ user, onLogout, loggingOut }) {
       <StaffHeader
         activeMenu={activeMenu}
         onOpenMobile={() => setMobileSidebarOpen(true)}
-        onRefresh={() => loadDashboardData(true)}
+        onRefresh={refreshDashboardData}
         refreshing={refreshing}
         user={user}
       />
@@ -144,7 +148,7 @@ function StaffDashboard({ user, onLogout, loggingOut }) {
                 {activeMenu === 'ruang' && (
                   <RuangFasilitasSection
                     ruangList={ruangList}
-                    onRefresh={() => loadDashboardData(true)}
+                    onRefresh={refreshDashboardData}
                   />
                 )}
 
@@ -160,7 +164,7 @@ function StaffDashboard({ user, onLogout, loggingOut }) {
                 {activeMenu === 'pengaduan' && (
                   <PengaduanSection
                     riwayatList={riwayatList}
-                    onRefresh={() => loadDashboardData(true)}
+                    onRefresh={refreshDashboardData}
                   />
                 )}
 
@@ -168,9 +172,11 @@ function StaffDashboard({ user, onLogout, loggingOut }) {
                   <JadwalSection
                     jadwalList={jadwalList}
                     ruangList={ruangList}
-                    onRefresh={() => loadDashboardData(true)}
+                    onRefresh={refreshDashboardData}
                   />
                 )}
+
+                {activeMenu === 'kelas' && <KelasSection />}
               </>
             )}
           </main>

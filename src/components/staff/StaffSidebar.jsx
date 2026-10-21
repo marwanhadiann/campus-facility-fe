@@ -4,6 +4,7 @@ import {
   CalendarCheck,
   Wrench,
   CalendarDays,
+  GraduationCap,
   LogOut,
   X
 } from 'lucide-react'
@@ -37,6 +38,12 @@ const MENU_ITEMS = [
     id: 'jadwal',
     label: 'Jadwal Perkuliahan',
     icon: CalendarDays,
+    badgeCount: null,
+  },
+  {
+    id: 'kelas',
+    label: 'Master Kelas',
+    icon: GraduationCap,
     badgeCount: null,
   },
 ]
