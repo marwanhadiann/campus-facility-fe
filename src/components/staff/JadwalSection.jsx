@@ -18,6 +18,8 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
   const [filterHari, setFilterHari] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [kelasList, setKelasList] = useState([])
+  const [mataKuliahList, setMataKuliahList] = useState([])
+  const [dosenList, setDosenList] = useState([])
   const [kelasError, setKelasError] = useState('')
 
   useEffect(() => {
@@ -29,6 +31,17 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
       })
       .catch((error) => {
         if (active) setKelasError(error.response?.data?.message || 'Daftar kelas tidak dapat dimuat.')
+      })
+
+    api.get('/api/jadwal/options')
+      .then(({ data }) => {
+        if (active) {
+          setMataKuliahList(data.data?.mata_kuliah || [])
+          setDosenList(data.data?.dosen || [])
+        }
+      })
+      .catch((error) => {
+        if (active) setKelasError(error.response?.data?.message || 'Daftar mata kuliah dan dosen tidak dapat dimuat.')
       })
 
     return () => { active = false }
@@ -43,8 +56,8 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
   // Modal Jadwal
   const [isJadwalModalOpen, setIsJadwalModalOpen] = useState(false)
   const [jadwalForm, setJadwalForm] = useState({
-    mata_kuliah_id: '',
-    dosen_id: '',
+    kode_mk: '',
+    nomor_induk: '',
     ruang_id: '',
     kelas_id: '',
     hari: 'SENIN',
@@ -90,8 +103,8 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
 
     try {
       await api.post('/api/jadwal', {
-        mata_kuliah_id: Number(jadwalForm.mata_kuliah_id),
-        dosen_id: Number(jadwalForm.dosen_id),
+        kode_mk: jadwalForm.kode_mk,
+        nomor_induk: jadwalForm.nomor_induk,
         ruang_id: Number(jadwalForm.ruang_id),
         kelas_id: Number(jadwalForm.kelas_id),
         hari: jadwalForm.hari,
@@ -385,30 +398,32 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                ID Mata Kuliah <span className="text-rose-500">*</span>
+                Mata Kuliah <span className="text-rose-500">*</span>
               </label>
-              <input
-                type="number"
+              <select
                 required
-                placeholder="ID MK (misal: 1)"
-                value={jadwalForm.mata_kuliah_id}
-                onChange={(e) => setJadwalForm({ ...jadwalForm, mata_kuliah_id: e.target.value })}
+                value={jadwalForm.kode_mk}
+                onChange={(e) => setJadwalForm({ ...jadwalForm, kode_mk: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:border-[#e8521d] focus:outline-none"
-              />
+              >
+                <option value="">Pilih Mata Kuliah</option>
+                {mataKuliahList.map((mk) => <option key={mk.kode_mk} value={mk.kode_mk}>{mk.kode_mk} - {mk.nama_mk}</option>)}
+              </select>
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                ID Dosen Pengampu <span className="text-rose-500">*</span>
+                Dosen Pengampu <span className="text-rose-500">*</span>
               </label>
-              <input
-                type="number"
+              <select
                 required
-                placeholder="ID User Dosen"
-                value={jadwalForm.dosen_id}
-                onChange={(e) => setJadwalForm({ ...jadwalForm, dosen_id: e.target.value })}
+                value={jadwalForm.nomor_induk}
+                onChange={(e) => setJadwalForm({ ...jadwalForm, nomor_induk: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:border-[#e8521d] focus:outline-none"
-              />
+              >
+                <option value="">Pilih Dosen</option>
+                {dosenList.map((dosen) => <option key={dosen.nomor_induk} value={dosen.nomor_induk}>{dosen.nomor_induk} - {dosen.nama}</option>)}
+              </select>
             </div>
           </div>
 
