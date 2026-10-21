@@ -7,6 +7,7 @@ import ApprovalJadwalSection from './ApprovalJadwalSection.jsx'
 import PengaduanSection from './PengaduanSection.jsx'
 import JadwalSection from './JadwalSection.jsx'
 import KelasSection from './KelasSection.jsx'
+import RegistrasiSection from './RegistrasiSection.jsx'
 import AlertBanner from '../common/AlertBanner.jsx'
 import api from '../../services/api.js'
 
@@ -160,7 +161,6 @@ function StaffDashboard({ user, onLogout, loggingOut }) {
                   />
                 )}
 
-
                 {activeMenu === 'pengaduan' && (
                   <PengaduanSection
                     riwayatList={riwayatList}
@@ -177,6 +177,8 @@ function StaffDashboard({ user, onLogout, loggingOut }) {
                 )}
 
                 {activeMenu === 'kelas' && <KelasSection />}
+
+                {activeMenu === 'registrasi' && <RegistrasiSection />}
               </>
             )}
           </main>

@@ -31,6 +31,10 @@ function StaffHeader({
       title: 'Master Kelas',
       subtitle: 'Kelola daftar kelas untuk kebutuhan penjadwalan perkuliahan',
     },
+    registrasi: {
+      title: 'Registrasi Akun',
+      subtitle: 'Daftarkan akun baru untuk mahasiswa, dosen, atau staff',
+    },
   }
 
   const current = titles[activeMenu] || titles.overview

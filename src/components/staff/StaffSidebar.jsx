@@ -5,6 +5,7 @@ import {
   Wrench,
   CalendarDays,
   GraduationCap,
+  UserPlus,
   LogOut,
   X
 } from 'lucide-react'
@@ -44,6 +45,12 @@ const MENU_ITEMS = [
     id: 'kelas',
     label: 'Master Kelas',
     icon: GraduationCap,
+    badgeCount: null,
+  },
+  {
+    id: 'registrasi',
+    label: 'Registrasi Akun',
+    icon: UserPlus,
     badgeCount: null,
   },
 ]

@@ -95,8 +95,6 @@ function ApprovalJadwalSection({
   // ── Fetch saat halaman atau filter berubah ────────────────────────
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setFetching(true)
-      setFetchError(null)
       fetchPengajuan(page, filterStatus, searchDosen)
     }, 0)
 
@@ -107,6 +105,8 @@ function ApprovalJadwalSection({
   const handleFilterStatus = (newStatus) => {
     setFilterStatus(newStatus)
     setPage(1)
+    setFetching(true)
+    setFetchError(null)
   }
 
   // ── Debounce Search Input (400ms) ─────────────────────────────────
@@ -117,12 +117,16 @@ function ApprovalJadwalSection({
     debounceTimer.current = setTimeout(() => {
       setSearchDosen(val)
       setPage(1)
+      setFetching(true)
+      setFetchError(null)
     }, 400)
   }
 
   // ── Page change dari Pagination component ─────────────────────────
   const handlePageChange = (newPage) => {
     setPage(newPage)
+    setFetching(true)
+    setFetchError(null)
     // useEffect [page] akan trigger fetch otomatis
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
