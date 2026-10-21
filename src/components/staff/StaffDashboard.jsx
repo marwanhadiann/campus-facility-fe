@@ -13,11 +13,13 @@ function StaffDashboard({ user, onLogout, loggingOut }) {
   const [activeMenu, setActiveMenu] = useState('overview')
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
-  // Centralized State Data
+  // Centralized State Data (pengajuan dikelola mandiri oleh ApprovalJadwalSection)
   const [ruangList, setRuangList] = useState([])
-  const [pengajuanList, setPengajuanList] = useState([])
   const [riwayatList, setRiwayatList] = useState([])
   const [jadwalList, setJadwalList] = useState([])
+
+  // Jumlah PENDING untuk sidebar badge — diupdate lewat callback onCountChange
+  const [pendingApprovalCount, setPendingApprovalCount] = useState(0)
 
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -26,25 +28,21 @@ function StaffDashboard({ user, onLogout, loggingOut }) {
   // Direct modal trigger from Overview
   const [activeModalItem, setActiveModalItem] = useState(null)
 
-  // Fetch all core operational data
+  // Fetch data operasional inti (tanpa pengajuan — dihandle ApprovalJadwalSection)
   const loadDashboardData = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true)
     else setLoading(true)
     setErrorBanner(null)
 
     try {
-      const [ruangRes, pengajuanRes, riwayatRes, jadwalRes] = await Promise.allSettled([
+      const [ruangRes, riwayatRes, jadwalRes] = await Promise.allSettled([
         api.get('/api/ruang'),
-        api.get('/api/pengajuan-jadwal'),
         api.get('/api/pengaduan/riwayat'),
         api.get('/api/jadwal'),
       ])
 
       if (ruangRes.status === 'fulfilled') {
         setRuangList(ruangRes.value.data.data || [])
-      }
-      if (pengajuanRes.status === 'fulfilled') {
-        setPengajuanList(pengajuanRes.value.data.data || [])
       }
       if (riwayatRes.status === 'fulfilled') {
         setRiwayatList(riwayatRes.value.data.data || [])
@@ -64,11 +62,11 @@ function StaffDashboard({ user, onLogout, loggingOut }) {
     loadDashboardData()
   }, [loadDashboardData])
 
-  // Hitung badge count untuk menu
-  const pendingApprovalCount = pengajuanList.filter((p) => p.status === 'PENDING').length
+  // counts untuk sidebar badge
   const counts = {
     pendingApprovalCount,
   }
+
 
   // Handler buka modal evaluasi dari overview
   const handleOpenApprovalModalFromOverview = (item) => {
@@ -135,7 +133,7 @@ function StaffDashboard({ user, onLogout, loggingOut }) {
                 {activeMenu === 'overview' && (
                   <OverviewSection
                     ruangList={ruangList}
-                    pengajuanList={pengajuanList}
+                    pendingApprovalCount={pendingApprovalCount}
                     riwayatList={riwayatList}
                     jadwalList={jadwalList}
                     onNavigate={setActiveMenu}
@@ -152,12 +150,12 @@ function StaffDashboard({ user, onLogout, loggingOut }) {
 
                 {activeMenu === 'approval' && (
                   <ApprovalJadwalSection
-                    pengajuanList={pengajuanList}
-                    onRefresh={() => loadDashboardData(true)}
+                    onCountChange={setPendingApprovalCount}
                     activeModalItem={activeModalItem}
                     onCloseModalItem={() => setActiveModalItem(null)}
                   />
                 )}
+
 
                 {activeMenu === 'pengaduan' && (
                   <PengaduanSection

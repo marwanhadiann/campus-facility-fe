@@ -558,7 +558,7 @@ function RuangFasilitasSection({ ruangList = [], onRefresh }) {
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:border-[#e8521d] focus:outline-none"
               >
                 <option value="TERSEDIA">TERSEDIA</option>
-                <option value="DALAM_PERBAIKAN">DALAM_PERBAIKAN</option>
+                <option value="DALAM_PERBAIKAN">DALAM PERBAIKAN</option>
                 <option value="DIPAKAI">DIPAKAI</option>
               </select>
             </div>
