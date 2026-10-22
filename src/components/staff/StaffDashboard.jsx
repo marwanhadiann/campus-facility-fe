@@ -33,10 +33,11 @@ function StaffDashboard({ user, onLogout, loggingOut }) {
   // Fetch data operasional inti (tanpa pengajuan — dihandle ApprovalJadwalSection)
   const loadDashboardData = useCallback(async () => {
     try {
-      const [ruangRes, riwayatRes, jadwalRes] = await Promise.allSettled([
+      const [ruangRes, riwayatRes, jadwalRes, pengajuanRes] = await Promise.allSettled([
         api.get('/api/ruang'),
         api.get('/api/pengaduan/riwayat'),
         api.get('/api/jadwal'),
+        api.get('/api/pengajuan-jadwal', { params: { status: 'PENDING', limit: 1 } })
       ])
 
       if (ruangRes.status === 'fulfilled') {
@@ -47,6 +48,13 @@ function StaffDashboard({ user, onLogout, loggingOut }) {
       }
       if (jadwalRes.status === 'fulfilled') {
         setJadwalList(jadwalRes.value.data.data || [])
+      }
+
+      if (pengajuanRes.status === 'fulfilled') {
+        const meta = pengajuanRes.value.data.meta
+        const data = pengajuanRes.value.data.data || []
+        const pendingCount = meta && meta.total_items !== undefined ? meta.total_items : data.length
+        setPendingApprovalCount(pendingCount)
       }
     } catch {
       setErrorBanner('Beberapa data operasional tidak dapat dimuat. Silakan periksa koneksi atau segarkan data.')

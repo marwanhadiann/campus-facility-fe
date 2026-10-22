@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { UserPlus } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { BookOpen, UserPlus } from 'lucide-react'
 import AlertBanner from '../common/AlertBanner.jsx'
 import api from '../../services/api.js'
 
@@ -9,6 +9,7 @@ const initialForm = {
   email: '',
   password: '',
   role: 'MAHASISWA',
+  kelas_id: '',
 }
 
 function RegistrasiSection() {
@@ -16,6 +17,23 @@ function RegistrasiSection() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [kelasList, setKelasList] = useState([])
+  const [loadingKelas, setLoadingKelas] = useState(false)
+
+  useEffect(() => {
+    const fetchKelas = async () => {
+      setLoadingKelas(true)
+      try {
+        const { data } = await api.get('/api/kelas')
+        setKelasList(data.data || [])
+      } catch (err) {
+        setError('Gagal memuat data kelas.')
+      } finally {
+        setLoadingKelas(false)
+      }
+    }
+    fetchKelas()
+  }, [])
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -23,13 +41,23 @@ function RegistrasiSection() {
     setSuccess('')
     setSubmitting(true)
 
+    // cegah submit ketika role mahasiswa belum dipilih kelas nya
+    if (form.role === 'MAHASISWA' && !form.kelas_id) {
+      setError('Data kelas Mahasiswa wajib dipilih untuk registrasi Mahasiswa.')
+      setSubmitting(false)
+      return
+    }
+
     try {
-      const { data } = await api.post('/api/auth/register', {
+      const payload = {
         ...form,
         nomor_induk: form.nomor_induk.trim(),
         nama: form.nama.trim(),
         email: form.email.trim(),
-      })
+        kelas_id: form.role === 'MAHASISWA' ? Number(form.kelas_id) : null
+      }
+
+      const { data } = await api.post('/api/auth/register', payload)
       setSuccess(`Akun ${data.data.nama} berhasil didaftarkan.`)
       setForm(initialForm)
     } catch (requestError) {
@@ -37,6 +65,16 @@ function RegistrasiSection() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  // Handler untuk ganti role 
+  const handleRoleChange = (event) => {
+    const newRole = event.target.value
+    setForm({
+      ...form,
+      role: newRole,
+      kelas_id: newRole === 'MAHASISWA' ? form.kelas_id : ''
+    })
   }
 
   return (
@@ -68,6 +106,38 @@ function RegistrasiSection() {
               </select>
             </div>
           </div>
+
+          {/* Hanya tampil ketika role nya mahasiswa */}
+          {form.role === 'MAHASISWA' && (
+            <div className='animate-in fade-in slide-in-from-top-2 duration-300'>
+              <label htmlFor="kelas" className='block text-xs font-bold text-slate-700 mb-1'>
+                Pilih Kelas <span className='text-rose-500'>*</span>
+              </label>
+              <div className='relative'>
+                <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400'>
+                  <BookOpen size={16} />
+                </div>
+                <select
+                  id="kelas"
+                  required={form.role === 'MAHASISWA'}
+                  value={form.kelas_id}
+                  onChange={(event) => setForm({ ...form, kelas_id: event.target.value })}
+                  className={`w-full pl-9 pr-3.5 py-2.5 rounded-xl border text-xs focus:outline-none appearance-none bg-white
+                    ${!form.kelas_id ? 'border-amber-300 bg-amber-50/30 text-amber-700 focus:border-amber-400' : 'border-slate-200 text-slate-800 focus:border-[#e8521d]'}`}
+                  disabled={loadingKelas}>
+                  <option value="" disabled>
+                    {loadingKelas ? 'Memuat data kelas...' : '-- Pilih Kelas Mahasiswa --'}
+                  </option>
+                  {kelasList.map((kelas) => (
+                    <option key={kelas.id} value={kelas.id}>
+                      {kelas.nama_kelas}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <p className='mt-1.5 text-[11px] text-amber-600 font-medium'>Wajib dipilih agar sistem dapat mengelompokkan jadwal mahasiswa.</p>
+            </div>
+          )}
 
           <div>
             <label htmlFor="nama" className="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap <span className="text-rose-500">*</span></label>
