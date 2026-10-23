@@ -79,12 +79,12 @@ function RegistrasiSection() {
   }
 
   return (
-    <section className="max-w-2xl space-y-5">
+    <section className="max-w-3xl mx-auto w-full space-y-5">
       {error && <AlertBanner type="error" message={error} onClose={() => setError('')} />}
       {success && <AlertBanner type="success" message={success} onClose={() => setSuccess('')} />}
 
       <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 border-b border-slate-100 pb-5">
           <span className="p-2 rounded-xl bg-orange-50 text-[#e8521d]"><UserPlus size={20} /></span>
           <div>
             <h2 className="text-lg font-bold text-slate-800">Registrasi Akun</h2>
@@ -140,14 +140,16 @@ function RegistrasiSection() {
             </div>
           )}
 
-          <div>
-            <label htmlFor="nama" className="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap <span className="text-rose-500">*</span></label>
-            <input id="nama" type="text" required minLength="2" maxLength="100" autoComplete="name" value={form.nama} onChange={(event) => setForm({ ...form, nama: event.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:border-[#e8521d] focus:outline-none" />
-          </div>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-5'>
+            <div>
+              <label htmlFor="nama" className="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap <span className="text-rose-500">*</span></label>
+              <input id="nama" type="text" required minLength="2" maxLength="100" autoComplete="name" value={form.nama} onChange={(event) => setForm({ ...form, nama: event.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:border-[#e8521d] focus:outline-none" />
+            </div>
 
-          <div>
-            <label htmlFor="email" className="block text-xs font-bold text-slate-700 mb-1">Email <span className="text-rose-500">*</span></label>
-            <input id="email" type="email" required maxLength="100" autoComplete="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:border-[#e8521d] focus:outline-none" />
+            <div>
+              <label htmlFor="email" className="block text-xs font-bold text-slate-700 mb-1">Email <span className="text-rose-500">*</span></label>
+              <input id="email" type="email" required maxLength="100" autoComplete="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:border-[#e8521d] focus:outline-none" />
+            </div>
           </div>
 
           <div>
