@@ -10,6 +10,7 @@ import KelasSection from './KelasSection.jsx'
 import RegistrasiSection from './RegistrasiSection.jsx'
 import AlertBanner from '../common/AlertBanner.jsx'
 import api from '../../services/api.js'
+import ManajemenUserSection from './ManajemenUserSection.jsx'
 
 function StaffDashboard({ user, onLogout, loggingOut }) {
   const [activeMenu, setActiveMenu] = useState('overview')
@@ -187,6 +188,8 @@ function StaffDashboard({ user, onLogout, loggingOut }) {
                 {activeMenu === 'kelas' && <KelasSection />}
 
                 {activeMenu === 'registrasi' && <RegistrasiSection />}
+
+                {activeMenu === 'users' && <ManajemenUserSection />}
               </>
             )}
           </main>

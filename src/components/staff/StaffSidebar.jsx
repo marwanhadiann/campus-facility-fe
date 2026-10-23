@@ -7,7 +7,8 @@ import {
   GraduationCap,
   UserPlus,
   LogOut,
-  X
+  X,
+  Users
 } from 'lucide-react'
 
 const MENU_ITEMS = [
@@ -53,6 +54,12 @@ const MENU_ITEMS = [
     icon: UserPlus,
     badgeCount: null,
   },
+  {
+    id: 'users',
+    label: 'Manajemen User',
+    icon: Users,
+    badgeCount: null,
+  }
 ]
 
 function StaffSidebar({

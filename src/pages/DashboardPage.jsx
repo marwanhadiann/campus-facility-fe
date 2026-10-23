@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useOutletContext } from 'react-router-dom'
 import { useAuth } from '../context/authContext.js'
 import StaffDashboard from '../components/staff/StaffDashboard.jsx'
+import MahasiswaDashboard from '../components/mahasiswa/MahasiswaDashboard.jsx'
 import StatusBadge from '../components/common/StatusBadge.jsx'
 
 function DashboardPage() {
@@ -28,6 +29,10 @@ function DashboardPage() {
         loggingOut={loggingOut}
       />
     )
+  }
+
+  if (user?.role === 'MAHASISWA') {
+    return <MahasiswaDashboard user={user} onLogout={handleLogout} loggingOut={loggingOut} />
   }
 
   // Fallback untuk role MAHASISWA atau DOSEN (akan diimplementasikan di iterasi berikutnya)

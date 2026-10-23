@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BookOpen, UserPlus } from 'lucide-react'
+import { BookOpen, UserPlus, Eye, EyeOff } from 'lucide-react'
 import AlertBanner from '../common/AlertBanner.jsx'
 import api from '../../services/api.js'
 
@@ -19,6 +19,7 @@ function RegistrasiSection() {
   const [submitting, setSubmitting] = useState(false)
   const [kelasList, setKelasList] = useState([])
   const [loadingKelas, setLoadingKelas] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     const fetchKelas = async () => {
@@ -150,8 +151,28 @@ function RegistrasiSection() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-xs font-bold text-slate-700 mb-1">Password <span className="text-rose-500">*</span></label>
-            <input id="password" type="password" required minLength="8" autoComplete="new-password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:border-[#e8521d] focus:outline-none" />
+            <label htmlFor="password" className="block text-xs font-bold text-slate-700 mb-1">
+              Password <span className="text-rose-500">*</span>
+            </label>
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                required
+                minLength="8"
+                autoComplete="new-password"
+                value={form.password}
+                onChange={(event) => setForm({ ...form, password: event.target.value })}
+                className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200 text-xs text-slate-800 focus:border-[#e8521d] focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-[#e8521d] transition-colors focus:outline-none"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
             <p className="mt-1 text-[11px] text-slate-500">Minimal 8 karakter.</p>
           </div>
 
