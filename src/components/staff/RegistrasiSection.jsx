@@ -51,11 +51,15 @@ function RegistrasiSection() {
 
     try {
       const payload = {
-        ...form,
         nomor_induk: form.nomor_induk.trim(),
         nama: form.nama.trim(),
         email: form.email.trim(),
-        kelas_id: form.role === 'MAHASISWA' ? Number(form.kelas_id) : null
+        password: form.password,
+        role: form.role,
+      }
+
+      if (form.role === 'MAHASISWA') {
+        payload.kelas_id = Number(form.kelas_id)
       }
 
       const { data } = await api.post('/api/auth/register', payload)
@@ -100,7 +104,7 @@ function RegistrasiSection() {
             </div>
             <div>
               <label htmlFor="role" className="block text-xs font-bold text-slate-700 mb-1">Peran <span className="text-rose-500">*</span></label>
-              <select id="role" value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:border-[#e8521d] focus:outline-none">
+              <select id="role" value={form.role} onChange={handleRoleChange} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:border-[#e8521d] focus:outline-none">
                 <option value="MAHASISWA">Mahasiswa</option>
                 <option value="DOSEN">Dosen</option>
                 <option value="STAFF">Staff</option>
@@ -140,7 +144,7 @@ function RegistrasiSection() {
             </div>
           )}
 
-          <div className='grid grid-cols-1 sm:grid-cols-2 gap-5'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
             <div>
               <label htmlFor="nama" className="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap <span className="text-rose-500">*</span></label>
               <input id="nama" type="text" required minLength="2" maxLength="100" autoComplete="name" value={form.nama} onChange={(event) => setForm({ ...form, nama: event.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:border-[#e8521d] focus:outline-none" />
