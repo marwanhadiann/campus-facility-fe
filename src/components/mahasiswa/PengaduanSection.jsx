@@ -1,0 +1,12 @@
+import { Wrench } from 'lucide-react'
+import StatusBadge from '../common/StatusBadge.jsx'
+
+function ReportList({ title, items, empty, resolved }) {
+  return <div><h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 border-b border-slate-100 pb-2">{title} ({items.length})</h3>{items.length ? items.map((item) => <div key={item.id} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border p-3.5 ${resolved ? 'border-slate-200 bg-slate-50' : 'border-slate-100'}`}><div><p className="text-xs font-bold"><span className="font-mono mr-2 text-[#e8521d]">Tiket #{item.id}</span>{item.judul}</p><p className="mt-1 text-[11px] text-slate-500">{item.nama_ruang} · {item.nama_fasilitas}</p>{item.catatan_staff && <p className="mt-2 text-[10px] text-emerald-700">Catatan: {item.catatan_staff}</p>}</div><StatusBadge status={item.status} size="sm" /></div>) : <p className="text-xs text-slate-500 italic">{empty}</p>}</div>
+}
+
+function PengaduanSection({ pengaduanList }) {
+  return <section id="pengaduan" className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs scroll-mt-24"><div className="flex items-center gap-2"><span className="p-2 rounded-xl bg-orange-50 text-[#e8521d]"><Wrench size={20} /></span><div><h2 className="text-lg font-bold">Pengaduan & Riwayat Saya</h2><p className="text-xs text-slate-500">Pantau tiket fasilitas.</p></div></div><div className="mt-6 space-y-6"><ReportList title="Sedang Diproses" items={pengaduanList.filter((item) => item.status !== 'RESOLVED')} empty="Tidak ada pengaduan aktif." /><ReportList title="Riwayat Selesai" items={pengaduanList.filter((item) => item.status === 'RESOLVED')} empty="Belum ada riwayat selesai." resolved /></div></section>
+}
+
+export default PengaduanSection
