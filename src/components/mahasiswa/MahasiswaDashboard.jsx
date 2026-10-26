@@ -140,6 +140,7 @@ function MahasiswaDashboard({ user, onLogout, loggingOut }) {
         <KatalogRuangSection
           ruangList={ruangList}
           fasilitasList={fasilitasList}
+          pengaduanList={pengaduanList}
           selectedRuang={selectedRuang}
           onOpenRuang={openRuang}
           onCloseRuang={() => setSelectedRuang(null)}
