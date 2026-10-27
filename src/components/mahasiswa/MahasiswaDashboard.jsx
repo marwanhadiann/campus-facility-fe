@@ -7,6 +7,7 @@ import OverviewSection from "./OverviewSection.jsx";
 import JadwalSection from "./JadwalSection.jsx";
 import KatalogRuangSection from "./KatalogRuangSection.jsx";
 import PengaduanSection from "./PengaduanSection.jsx";
+import NotificationPopup from "../common/NotificationPopup.jsx";
 
 const initialReport = {
   fasilitas_ruang_id: "",
@@ -33,6 +34,8 @@ function MahasiswaDashboard({ user, onLogout, loggingOut }) {
   const [report, setReport] = useState(initialReport);
   const [reportError, setReportError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [unreadNotifs, setUnreadNotifs] = useState([]);
+  const [showNotifModal, setShowNotifModal] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -157,8 +160,51 @@ function MahasiswaDashboard({ user, onLogout, loggingOut }) {
       pengaduan: <PengaduanSection pengaduanList={pengaduanList} />,
     }[activeMenu] || null;
 
+  useEffect(() => {
+    const fetchUnreadNotifications = async () => {
+      try {
+        const response = await fetch("/api/notifikasi?is_read=false", {
+          method: "GET",
+          credentials: "include", // Otomatis mengirim cookie HttpOnly
+        });
+
+        const result = await response.json();
+
+        if (result.success && result.data && result.data.length > 0) {
+          setUnreadNotifs(result.data);
+          setShowNotifModal(true);
+        } else {
+          setShowNotifModal(false);
+        }
+      } catch (error) {
+        console.error("Gagal mengambil notifikasi:", error);
+      }
+    };
+
+    fetchUnreadNotifications();
+  }, []);
+
+  const handleMarkAllRead = async () => {
+    try {
+      await fetch("/api/notifikasi/read-all", {
+        method: "PATCH",
+        credentials: "include",
+      });
+      setShowNotifModal(false);
+      setUnreadNotifs([]);
+    } catch (error) {
+      console.error("Gagal menandai notifikasi:", error);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[#f4f5f7] text-slate-800">
+      <NotificationPopup
+        isOpen={showNotifModal}
+        onClose={() => setShowNotifModal(false)}
+        notifications={unreadNotifs}
+        onMarkAllAsRead={handleMarkAllRead}
+      />
       <Sidebar
         user={user}
         activeMenu={activeMenu}
@@ -171,9 +217,9 @@ function MahasiswaDashboard({ user, onLogout, loggingOut }) {
       <div className="lg:pl-64">
         <Header
           user={user}
-          onLogout={onLogout}
-          loggingOut={loggingOut}
           onOpenMobile={() => setMobileSidebarOpen(true)}
+          unreadCount={unreadNotifs.length}
+          onOpenNotifications={() => setShowNotifModal(true)}
         />
         <div className="max-w-7xl mx-auto p-4 sm:p-8 space-y-6">
           {error && (

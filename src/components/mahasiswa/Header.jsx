@@ -1,7 +1,7 @@
-import { Bell, LogOut } from "lucide-react";
+import { Bell } from "lucide-react";
 import { SidebarMenuButton } from "../common/UserSidebar.jsx";
 
-function Header({ user, onLogout, loggingOut, onOpenMobile }) {
+function Header({ user, onOpenMobile, unreadCount = 0, onOpenNotifications }) {
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-slate-200/80 px-4 sm:px-8 py-3.5">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
@@ -24,22 +24,17 @@ function Header({ user, onLogout, loggingOut, onOpenMobile }) {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            className="p-2 rounded-xl text-slate-500 hover:bg-slate-100"
+            onClick={onOpenNotifications}
+            className="relative p-2 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer"
             aria-label="Notifikasi"
           >
             <Bell size={19} />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-extrabold text-white ring-2 ring-white animate-in zoom-in">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
           </button>
-          {/* <button
-            type="button"
-            onClick={onLogout}
-            disabled={loggingOut}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-          >
-            <LogOut size={15} />
-            <span className="hidden sm:inline">
-              {loggingOut ? "Keluar..." : "Logout"}
-            </span>
-          </button> */}
         </div>
       </div>
     </header>

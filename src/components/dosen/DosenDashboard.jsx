@@ -8,6 +8,7 @@ import JadwalSection from "./JadwalSection.jsx";
 import KatalogRuangSection from "./KatalogRuangSection.jsx";
 import PengaduanSection from "./PengaduanSection.jsx";
 import PengajuanJadwalSection from "./PengajuanJadwalSection.jsx";
+import NotificationPopup from "../common/NotificationPopup.jsx";
 
 const initialForm = {
   jadwal_id: "",
@@ -45,6 +46,8 @@ function DosenDashboard({ user, onLogout, loggingOut }) {
   const [report, setReport] = useState(initialReport);
   const [reportError, setReportError] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [unreadNotifs, setUnreadNotifs] = useState([]);
+  const [showNotifModal, setShowNotifModal] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -159,6 +162,41 @@ function DosenDashboard({ user, onLogout, loggingOut }) {
     }
   };
 
+  useEffect(() => {
+    const fetchUnreadNotifications = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch("/api/notifikasi?is_read=false", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json();
+
+        if (result.success && result.data && result.data.length > 0) {
+          setUnreadNotifs(result.data);
+          setShowNotifModal(true); // Munculkan popup jika ada notifikasi unread
+        }
+      } catch (error) {
+        console.error("Gagal mengambil notifikasi unread:", error);
+      }
+    };
+
+    fetchUnreadNotifications();
+  }, []);
+
+  const handleMarkAllRead = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      await fetch("/api/notifikasi/read-all", {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setShowNotifModal(false);
+      setUnreadNotifs([]);
+    } catch (error) {
+      console.error("Gagal menandai notifikasi:", error);
+    }
+  };
+
   const currentPage =
     {
       dashboard: (
@@ -214,6 +252,12 @@ function DosenDashboard({ user, onLogout, loggingOut }) {
 
   return (
     <main className="min-h-screen bg-[#f4f5f7] text-slate-800">
+      <NotificationPopup
+        isOpen={showNotifModal}
+        onClose={() => setShowNotifModal(false)}
+        notifications={unreadNotifs}
+        onMarkAllAsRead={handleMarkAllRead}
+      />
       <Sidebar
         user={user}
         activeMenu={activeMenu}
@@ -226,9 +270,9 @@ function DosenDashboard({ user, onLogout, loggingOut }) {
       <div className="lg:pl-64">
         <Header
           user={user}
-          onLogout={onLogout}
-          loggingOut={loggingOut}
           onOpenMobile={() => setMobileSidebarOpen(true)}
+          unreadCount={unreadNotifs.length}
+          onOpenNotifications={() => setShowNotifModal(true)}
         />
         <div className="max-w-7xl mx-auto p-4 sm:p-8 space-y-6">
           {error && (
