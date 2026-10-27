@@ -46,8 +46,10 @@ function DosenDashboard({ user, onLogout, loggingOut }) {
   const [report, setReport] = useState(initialReport);
   const [reportError, setReportError] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
-  const [unreadNotifs, setUnreadNotifs] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifModal, setShowNotifModal] = useState(false);
+  const [notifLoading, setNotifLoading] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -162,38 +164,46 @@ function DosenDashboard({ user, onLogout, loggingOut }) {
     }
   };
 
-  useEffect(() => {
-    const fetchUnreadNotifications = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const response = await fetch("/api/notifikasi?is_read=false", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const result = await response.json();
+  const fetchNotifications = async (autoShowPopupIfUnread = false) => {
+    setNotifLoading(true);
+    try {
+      const { data: result } = await api.get("/api/notifikasi");
+      if (result.success && result.data) {
+        setNotifications(result.data);
+        const unread =
+          result.meta?.unread_count ??
+          result.data.filter((n) => !n.is_read).length;
+        setUnreadCount(unread);
 
-        if (result.success && result.data && result.data.length > 0) {
-          setUnreadNotifs(result.data);
-          setShowNotifModal(true); // Munculkan popup jika ada notifikasi unread
+        if (autoShowPopupIfUnread && unread > 0) {
+          setShowNotifModal(true);
         }
-      } catch (error) {
-        console.error("Gagal mengambil notifikasi unread:", error);
       }
-    };
+    } catch (error) {
+      console.error("Gagal mengambil notifikasi:", error);
+    } finally {
+      setNotifLoading(false);
+    }
+  };
 
-    fetchUnreadNotifications();
+  useEffect(() => {
+    fetchNotifications(true);
   }, []);
+
+  const handleOpenNotifications = () => {
+    setShowNotifModal(true);
+    fetchNotifications(false);
+  };
 
   const handleMarkAllRead = async () => {
     try {
-      const token = localStorage.getItem("token");
-      await fetch("/api/notifikasi/read-all", {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setShowNotifModal(false);
-      setUnreadNotifs([]);
+      await api.patch("/api/notifikasi/read-all");
+      setNotifications((prev) =>
+        prev.map((item) => ({ ...item, is_read: true })),
+      );
+      setUnreadCount(0);
     } catch (error) {
-      console.error("Gagal menandai notifikasi:", error);
+      console.error("Gagal menandai notifikasi dibaca:", error);
     }
   };
 
@@ -255,7 +265,8 @@ function DosenDashboard({ user, onLogout, loggingOut }) {
       <NotificationPopup
         isOpen={showNotifModal}
         onClose={() => setShowNotifModal(false)}
-        notifications={unreadNotifs}
+        notifications={notifications}
+        loading={notifLoading}
         onMarkAllAsRead={handleMarkAllRead}
       />
       <Sidebar
@@ -271,8 +282,8 @@ function DosenDashboard({ user, onLogout, loggingOut }) {
         <Header
           user={user}
           onOpenMobile={() => setMobileSidebarOpen(true)}
-          unreadCount={unreadNotifs.length}
-          onOpenNotifications={() => setShowNotifModal(true)}
+          unreadCount={unreadCount}
+          onOpenNotifications={handleOpenNotifications}
         />
         <div className="max-w-7xl mx-auto p-4 sm:p-8 space-y-6">
           {error && (
