@@ -115,6 +115,16 @@ function PengaduanSection({ riwayatList = [], onRefresh }) {
     return matchText && matchStatus
   })
 
+  const getImageUrl = (path) => {
+  if (!path) return null
+  if (path.startsWith('http://') || path.startsWith('https://')) return path
+
+  const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+  const cleanPath = path.startsWith('/') ? path : `/${path}`
+
+  return `${baseURL}${cleanPath}`
+}
+
   return (
     <div className="space-y-6">
       {/* Toast Feedback */}
@@ -408,9 +418,9 @@ function PengaduanSection({ riwayatList = [], onRefresh }) {
                 Foto Bukti
               </h4>
               {searchedReport?.foto_url ? (
-                <a href={searchedReport.foto_url} target="_blank" rel="noreferrer" title="Klik untuk perbesar foto">
+                <a href={getImageUrl(searchedReport.foto_url)} target="_blank" rel="noreferrer" title="Klik untuk perbesar foto">
                   <img
-                    src={searchedReport.foto_url}
+                    src={getImageUrl(searchedReport.foto_url)}
                     alt="Bukti Kerusakan"
                     className="w-full h-32 object-cover rounded-xl border border-slate-200 cursor-pointer hover:opacity-80 transition-opacity bg-white"
                   />

@@ -643,8 +643,8 @@ function RuangFasilitasSection({ ruangList = [], onRefresh }) {
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:border-[#e8521d] focus:outline-none"
             >
               <option value="NORMAL">NORMAL (Berfungsi Baik)</option>
-              <option value="RUSAK_RINGAN">RUSAK_RINGAN (Perlu Perawatan)</option>
-              <option value="RUSAK_BERAT">RUSAK_BERAT (Tidak Berfungsi)</option>
+              <option value="RUSAK_RINGAN">RUSAK RINGAN (Perlu Perawatan)</option>
+              <option value="RUSAK_BERAT">RUSAK BERAT (Tidak Berfungsi)</option>
             </select>
           </div>
 
