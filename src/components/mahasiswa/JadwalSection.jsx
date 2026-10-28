@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { CalendarDays, Clock, MapPin, UserRound } from 'lucide-react'
+import { CalendarDays, Clock, MapPin, UserRound, Calendar } from 'lucide-react'
 
 const HARI_ORDER = {
   SENIN: 1,
@@ -11,7 +11,16 @@ const HARI_ORDER = {
   MINGGU: 7,
 }
 
-function JadwalSection({ jadwalList = [], hari, kelas, kelasOptions = [], onHariChange, onKelasChange, loading }) {
+function JadwalSection({
+  jadwalList = [],
+  pengajuanMap = {},
+  hari,
+  kelas,
+  kelasOptions = [],
+  onHariChange,
+  onKelasChange,
+  loading,
+}) {
   const filteredAndSorted = useMemo(() => {
     return [...jadwalList]
       .filter((item) => (hari === 'SEMUA' || item.hari === hari) && (kelas === 'SEMUA' || item.kelas === kelas))
@@ -67,36 +76,74 @@ function JadwalSection({ jadwalList = [], hari, kelas, kelasOptions = [], onHari
         {loading ? (
           <p className="text-xs text-slate-500">Memuat jadwal...</p>
         ) : filteredAndSorted.length ? (
-          filteredAndSorted.map((item) => (
-            <article
-              key={item.jadwal_id}
-              className="rounded-xl border border-slate-200 p-4 hover:border-orange-200 hover:shadow-sm transition-all bg-white"
-            >
-              <div className="flex justify-between gap-3">
+          filteredAndSorted.map((item) => {
+            const jadwalId = Number(item.jadwal_id || item.id);
+            const pengajuan = pengajuanMap[jadwalId];
+            const isApproved = pengajuan && String(pengajuan.status).toUpperCase() === 'APPROVED';
+
+            return (
+              <article
+                key={jadwalId}
+                className={`rounded-xl border p-4 transition-all bg-white flex flex-col justify-between ${
+                  isApproved ? 'border-orange-300 shadow-xs' : 'border-slate-200 hover:border-orange-200 hover:shadow-sm'
+                }`}
+              >
                 <div>
-                  <p className="font-bold text-sm text-slate-800">{item.mata_kuliah?.nama_mk}</p>
-                  <p className="mt-1 text-[11px] font-mono text-slate-500">
-                    {item.mata_kuliah?.kode_mk} · {item.kelas}
-                  </p>
+                  <div className="flex justify-between gap-3">
+                    <div>
+                      <p className="font-bold text-sm text-slate-800">{item.mata_kuliah?.nama_mk}</p>
+                      <p className="mt-1 text-[11px] font-mono text-slate-500">
+                        {item.mata_kuliah?.kode_mk} · {item.kelas}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600 h-fit">
+                      {item.hari}
+                    </span>
+                  </div>
+
+                  {/* Jadwal Semula */}
+                  <div className="mt-3 pt-3 border-t border-slate-100 space-y-1.5">
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Jadwal Semula</p>
+                    <p className="text-xs font-semibold text-slate-700">
+                      <Clock size={14} className="inline mr-1.5 text-slate-400" />
+                      {item.jam_mulai} - {item.jam_selesai}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      <UserRound size={14} className="inline mr-1.5 text-slate-400" />
+                      {item.dosen?.nama_dosen || 'Dosen'}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      <MapPin size={14} className="inline mr-1.5 text-slate-400" />
+                      {item.ruang?.nama_ruang} ({item.ruang?.kode_ruang})
+                    </p>
+                  </div>
+
+                  {/* Jadwal Pengganti (Hanya Muncul Jika Perubahan Disetujui/APPROVED) */}
+                  {isApproved && (
+                    <div className="mt-3 p-3 rounded-xl bg-orange-50/70 border border-orange-200/80 space-y-2">
+                      <span className="text-[11px] font-bold text-[#e8521d] flex items-center gap-1">
+                        <Calendar size={13} />
+                        Jadwal Pengganti
+                      </span>
+
+                      <div className="text-xs text-slate-700 space-y-1">
+                        <p className="font-semibold text-slate-800">
+                          Tanggal: {pengajuan.tanggal_baru}
+                        </p>
+                        <p className="font-semibold text-slate-800">
+                          Jam: {pengajuan.jam_mulai_baru} - {pengajuan.jam_selesai_baru}
+                        </p>
+                        <p className="text-slate-600">
+                          Ruang: {pengajuan.ruang_baru?.nama_ruang || item.ruang?.nama_ruang} 
+                          {pengajuan.ruang_baru?.kode_ruang ? ` (${pengajuan.ruang_baru.kode_ruang})` : ''}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <span className="shrink-0 rounded-lg bg-orange-50 px-2 py-1 text-[10px] font-bold text-[#e8521d] h-fit">
-                  {item.hari}
-                </span>
-              </div>
-              <p className="mt-4 text-xs font-semibold text-slate-700">
-                <Clock size={14} className="inline mr-1.5 text-[#e8521d]" />
-                {item.jam_mulai} - {item.jam_selesai}
-              </p>
-              <p className="mt-2 text-xs text-slate-600">
-                <UserRound size={14} className="inline mr-1.5" />
-                {item.dosen?.nama_dosen}
-              </p>
-              <p className="mt-2 text-xs text-slate-600">
-                <MapPin size={14} className="inline mr-1.5" />
-                {item.ruang?.nama_ruang} ({item.ruang?.kode_ruang})
-              </p>
-            </article>
-          ))
+              </article>
+            )
+          })
         ) : (
           <p className="text-xs text-slate-500">Tidak ada jadwal.</p>
         )}

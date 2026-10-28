@@ -23,6 +23,7 @@ function MahasiswaDashboard({ user, onLogout, loggingOut }) {
   const [jadwalList, setJadwalList] = useState([]);
   const [ruangList, setRuangList] = useState([]);
   const [pengaduanList, setPengaduanList] = useState([]);
+  const [pengajuanList, setPengajuanList] = useState([]);
   const [selectedRuang, setSelectedRuang] = useState(null);
   const [fasilitasList, setFasilitasList] = useState([]);
   const [hari, setHari] = useState("SEMUA");
@@ -45,7 +46,8 @@ function MahasiswaDashboard({ user, onLogout, loggingOut }) {
       api.get("/api/jadwal"),
       api.get("/api/ruang"),
       api.get("/api/pengaduan/me"),
-    ]).then(([jadwal, ruang, pengaduan]) => {
+      api.get("/api/pengajuan-jadwal").catch(() => ({ data: { data: [] } })),
+    ]).then(([jadwal, ruang, pengaduan, pengajuan]) => {
       if (!active) return;
       if (jadwal.status === "fulfilled")
         setJadwalList(jadwal.value.data.data || []);
@@ -53,12 +55,16 @@ function MahasiswaDashboard({ user, onLogout, loggingOut }) {
         setRuangList(ruang.value.data.data || []);
       if (pengaduan.status === "fulfilled")
         setPengaduanList(pengaduan.value.data.data || []);
+      if (pengajuan.status === "fulfilled" && pengajuan.value?.data?.data)
+        setPengajuanList(pengajuan.value.data.data || []);
+
       if (
         [jadwal, ruang, pengaduan].some(
           (result) => result.status === "rejected",
         )
       )
         setError("Sebagian data tidak dapat dimuat.");
+
       setLoading(false);
     });
     return () => {
@@ -66,10 +72,27 @@ function MahasiswaDashboard({ user, onLogout, loggingOut }) {
     };
   }, []);
 
+  const pengajuanMap = useMemo(() => {
+    const map = {};
+    pengajuanList.forEach((item) => {
+      const key = Number(item.jadwal_id || item.id);
+      const itemTime = new Date(item.updated_at || item.created_at || 0).getTime();
+      const existingTime = map[key]
+        ? new Date(map[key].updated_at || map[key].created_at || 0).getTime()
+        : 0;
+
+      if (!map[key] || itemTime >= existingTime) {
+        map[key] = item;
+      }
+    });
+    return map;
+  }, [pengajuanList]);
+
   const kelasOptions = useMemo(
     () => [...new Set(jadwalList.map((item) => item.kelas))],
     [jadwalList],
   );
+
   const openRuang = async (ruang) => {
     setSelectedRuang(ruang);
     setFasilitasList([]);
@@ -83,12 +106,14 @@ function MahasiswaDashboard({ user, onLogout, loggingOut }) {
       );
     }
   };
+
   const openReport = (fasilitasId = "") => {
     setReport({ ...initialReport, fasilitas_ruang_id: String(fasilitasId) });
     setReportError("");
     setSelectedRuang(null);
     setIsReportOpen(true);
   };
+
   const submitReport = async (event) => {
     event.preventDefault();
     if (!report.foto)
@@ -121,11 +146,55 @@ function MahasiswaDashboard({ user, onLogout, loggingOut }) {
     }
   };
 
+  const fetchNotifications = async (autoShowPopupIfUnread = false) => {
+    setNotifLoading(true);
+    try {
+      const { data: result } = await api.get("/api/notifikasi");
+      if (result.success && result.data) {
+        setNotifications(result.data);
+        const unread =
+          result.meta?.unread_count ??
+          result.data.filter((n) => !n.is_read).length;
+        setUnreadCount(unread);
+
+        if (autoShowPopupIfUnread && unread > 0) {
+          setShowNotifModal(true);
+        }
+      }
+    } catch (error) {
+      console.error("Gagal mengambil notifikasi:", error);
+    } finally {
+      setNotifLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications(true);
+  }, []);
+
+  const handleOpenNotifications = () => {
+    setShowNotifModal(true);
+    fetchNotifications(false);
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await api.patch("/api/notifikasi/read-all");
+      setNotifications((prev) =>
+        prev.map((item) => ({ ...item, is_read: true })),
+      );
+      setUnreadCount(0);
+    } catch (error) {
+      console.error("Gagal menandai notifikasi dibaca:", error);
+    }
+  };
+
   const currentPage =
     {
       dashboard: (
         <OverviewSection
           jadwalList={jadwalList}
+          pengajuanMap={pengajuanMap}
           pengaduanList={pengaduanList}
           onNavigate={setActiveMenu}
         />
@@ -133,6 +202,7 @@ function MahasiswaDashboard({ user, onLogout, loggingOut }) {
       jadwal: (
         <JadwalSection
           jadwalList={jadwalList}
+          pengajuanMap={pengajuanMap}
           kelasOptions={kelasOptions}
           hari={hari}
           kelas={kelas}
@@ -162,45 +232,6 @@ function MahasiswaDashboard({ user, onLogout, loggingOut }) {
       pengaduan: <PengaduanSection pengaduanList={pengaduanList} />,
     }[activeMenu] || null;
 
-  const fetchNotifications = async (autoShowPopupIfUnread = false) => {
-  setNotifLoading(true);
-  try {
-    const { data: result } = await api.get("/api/notifikasi");
-    if (result.success && result.data) {
-      setNotifications(result.data);
-      const unread = result.meta?.unread_count ?? result.data.filter((n) => !n.is_read).length;
-      setUnreadCount(unread);
-
-      if (autoShowPopupIfUnread && unread > 0) {
-        setShowNotifModal(true);
-      }
-    }
-  } catch (error) {
-    console.error("Gagal mengambil notifikasi:", error);
-  } finally {
-    setNotifLoading(false);
-  }
-};
-
-useEffect(() => {
-  fetchNotifications(true);
-}, []);
-
-const handleOpenNotifications = () => {
-  setShowNotifModal(true);
-  fetchNotifications(false);
-};
-
-const handleMarkAllRead = async () => {
-  try {
-    await api.patch("/api/notifikasi/read-all");
-    setNotifications((prev) => prev.map((item) => ({ ...item, is_read: true })));
-    setUnreadCount(0);
-  } catch (error) {
-    console.error("Gagal menandai notifikasi dibaca:", error);
-  }
-};
-
   return (
     <main className="min-h-screen bg-[#f4f5f7] text-slate-800">
       <NotificationPopup
@@ -223,7 +254,7 @@ const handleMarkAllRead = async () => {
         <Header
           user={user}
           onOpenMobile={() => setMobileSidebarOpen(true)}
-          unreadCount={unreadCount  }
+          unreadCount={unreadCount}
           onOpenNotifications={handleOpenNotifications}
         />
         <div className="max-w-7xl mx-auto p-4 sm:p-8 space-y-6">

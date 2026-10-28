@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AlertBanner from "../common/AlertBanner.jsx";
 import api from "../../services/api.js";
 import Sidebar from "./Sidebar.jsx";
@@ -207,11 +207,23 @@ function DosenDashboard({ user, onLogout, loggingOut }) {
     }
   };
 
+  const pengajuanMap = useMemo(() => {
+  const map = {};
+  pengajuanList.forEach((item) => {
+    const key = Number(item.jadwal_id);
+    if (!map[key] || new Date(item.created_at || 0) > new Date(map[key].created_at || 0)) {
+      map[key] = item;
+    }
+  });
+  return map;
+}, [pengajuanList]);
+
   const currentPage =
     {
       dashboard: (
         <OverviewSection
           jadwalList={jadwalList}
+          pengajuanMap={pengajuanMap}
           pengaduanList={pengaduanList}
           onNavigate={setActiveMenu}
         />
@@ -219,6 +231,7 @@ function DosenDashboard({ user, onLogout, loggingOut }) {
       jadwal: (
         <JadwalSection
           jadwalList={jadwalList}
+          pengajuanMap={pengajuanMap}
           loading={loading}
           submittedJadwalIds={submittedJadwalIds}
           onOpenForm={openForm}
@@ -259,6 +272,14 @@ function DosenDashboard({ user, onLogout, loggingOut }) {
         />
       ),
     }[activeMenu] || null;
+
+const pendingJadwalIds = useMemo(() => {
+  return new Set(
+    pengajuanList
+      .filter((item) => item.status === "PENDING")
+      .map((item) => Number(item.jadwal_id))
+  );
+}, [pengajuanList]);
 
   return (
     <main className="min-h-screen bg-[#f4f5f7] text-slate-800">

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { CalendarDays, Clock, MapPin, UserRound, FileEdit } from 'lucide-react'
+import { CalendarDays, Clock, MapPin, UserRound, FileEdit, Calendar, AlertCircle, CheckCircle2, XCircle } from 'lucide-react'
 
 const HARI_ORDER = {
   SENIN: 1,
@@ -13,16 +13,15 @@ const HARI_ORDER = {
 
 function JadwalSection({
   jadwalList = [],
+  pengajuanMap = {},
   hari,
   kelas,
   kelasOptions,
   onHariChange,
   onKelasChange,
   loading,
-  submittedJadwalIds,
   onOpenForm,
 }) {
-  // Fallback state jika parent (DosenDashboard) tidak mengirimkan state hari & kelas
   const [localHari, setLocalHari] = useState('SEMUA')
   const [localKelas, setLocalKelas] = useState('SEMUA')
 
@@ -39,13 +38,11 @@ function JadwalSection({
     else setLocalKelas(val)
   }
 
-  // Opsi kelas otomatis jika kelasOptions tidak dikirim
   const computedKelasOptions = useMemo(() => {
     if (kelasOptions && kelasOptions.length > 0) return kelasOptions
     return [...new Set(jadwalList.map((item) => item.kelas).filter(Boolean))]
   }, [jadwalList, kelasOptions])
 
-  // Filter & Urutkan jadwal berdasarkan hari dan jam
   const filteredAndSorted = useMemo(() => {
     return [...jadwalList]
       .filter(
@@ -62,6 +59,33 @@ function JadwalSection({
   }, [jadwalList, activeHari, activeKelas])
 
   const isDosen = Boolean(onOpenForm)
+
+  const renderStatusBadge = (status) => {
+    switch (status) {
+      case 'APPROVED':
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md">
+            <CheckCircle2 size={12} />
+            Pengajuan Disetujui
+          </span>
+        )
+      case 'REJECTED':
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-rose-700 bg-rose-100/80 px-2 py-0.5 rounded-md">
+            <XCircle size={12} />
+            Pengajuan Ditolak
+          </span>
+        )
+      case 'PENDING':
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-md">
+            <AlertCircle size={12} />
+            Pengajuan Diproses
+          </span>
+        )
+    }
+  }
 
   return (
     <section id="jadwal" className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs scroll-mt-24">
@@ -112,12 +136,14 @@ function JadwalSection({
           <p className="text-xs text-slate-500">Memuat jadwal...</p>
         ) : filteredAndSorted.length ? (
           filteredAndSorted.map((item) => {
-            const isSubmitted = submittedJadwalIds?.has(Number(item.jadwal_id))
+            const pengajuan = pengajuanMap[Number(item.jadwal_id)]
 
             return (
               <article
                 key={item.jadwal_id}
-                className="rounded-xl border border-slate-200 p-4 hover:border-orange-200 hover:shadow-sm transition-all bg-white flex flex-col justify-between"
+                className={`rounded-xl border p-4 transition-all bg-white flex flex-col justify-between ${
+                  pengajuan ? 'border-orange-300 shadow-xs' : 'border-slate-200 hover:border-orange-200 hover:shadow-sm'
+                }`}
               >
                 <div>
                   <div className="flex justify-between gap-3">
@@ -127,30 +153,66 @@ function JadwalSection({
                         {item.mata_kuliah?.kode_mk} · {item.kelas}
                       </p>
                     </div>
-                    <span className="shrink-0 rounded-lg bg-orange-50 px-2 py-1 text-[10px] font-bold text-[#e8521d] h-fit">
+                    <span className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600 h-fit">
                       {item.hari}
                     </span>
                   </div>
-                  <p className="mt-4 text-xs font-semibold text-slate-700">
-                    <Clock size={14} className="inline mr-1.5 text-[#e8521d]" />
-                    {item.jam_mulai} - {item.jam_selesai}
-                  </p>
-                  <p className="mt-2 text-xs text-slate-600">
-                    <UserRound size={14} className="inline mr-1.5" />
-                    {item.dosen?.nama_dosen || 'Dosen'}
-                  </p>
-                  <p className="mt-2 text-xs text-slate-600">
-                    <MapPin size={14} className="inline mr-1.5" />
-                    {item.ruang?.nama_ruang} ({item.ruang?.kode_ruang})
-                  </p>
+
+                  {/* Jadwal Asli / Semula */}
+                  <div className="mt-3 pt-3 border-t border-slate-100 space-y-1.5">
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Jadwal Semula</p>
+                    <p className="text-xs font-semibold text-slate-700">
+                      <Clock size={14} className="inline mr-1.5 text-slate-400" />
+                      {item.jam_mulai} - {item.jam_selesai}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      <UserRound size={14} className="inline mr-1.5 text-slate-400" />
+                      {item.dosen?.nama_dosen || 'Dosen'}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      <MapPin size={14} className="inline mr-1.5 text-slate-400" />
+                      {item.ruang?.nama_ruang} ({item.ruang?.kode_ruang})
+                    </p>
+                  </div>
+
+                  {/* Informasi Perubahan Jadwal Baru (Jika Ada Pengajuan) */}
+                  {pengajuan && (
+                    <div className="mt-3 p-3 rounded-xl bg-orange-50/70 border border-orange-200/80 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-bold text-[#e8521d] flex items-center gap-1">
+                          <Calendar size={13} />
+                          Perubahan Jadwal
+                        </span>
+                        {renderStatusBadge(pengajuan.status)}
+                      </div>
+
+                      <div className="text-xs text-slate-700 space-y-1">
+                        <p className="font-semibold text-slate-800">
+                          Tanggal: {pengajuan.tanggal_baru}
+                        </p>
+                        <p className="font-semibold text-slate-800">
+                          Jam: {pengajuan.jam_mulai_baru} - {pengajuan.jam_selesai_baru}
+                        </p>
+                        <p className="text-slate-600">
+                          Ruang: {pengajuan.ruang_baru?.nama_ruang || item.ruang?.nama_ruang} 
+                          {pengajuan.ruang_baru?.kode_ruang ? ` (${pengajuan.ruang_baru.kode_ruang})` : ''}
+                        </p>
+                        {pengajuan.catatan_staff && (
+                          <p className="text-[11px] text-slate-500 italic mt-1 bg-white/60 p-1.5 rounded-lg border border-slate-200/60">
+                            Catatan Staff: "{pengajuan.catatan_staff}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Tombol Khusus Dosen */}
                 {isDosen && (
                   <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
-                    {isSubmitted ? (
+                    {pengajuan && pengajuan.status === 'PENDING' ? (
                       <span className="text-[11px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">
-                        Pengajuan Diproses
+                        Sedang Diproses
                       </span>
                     ) : (
                       <button
@@ -159,7 +221,7 @@ function JadwalSection({
                         className="text-xs font-bold text-[#e8521d] hover:bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-200 transition-colors flex items-center gap-1.5 cursor-pointer"
                       >
                         <FileEdit size={13} />
-                        <span>Ajukan Perubahan</span>
+                        <span>{pengajuan ? 'Ajukan Ulang Perubahan' : 'Ajukan Perubahan'}</span>
                       </button>
                     )}
                   </div>

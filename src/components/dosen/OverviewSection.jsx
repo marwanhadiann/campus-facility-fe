@@ -1,4 +1,4 @@
-import { CalendarDays, Clock, MapPin, Wrench, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react'
+import { CalendarDays, Clock, MapPin, Wrench, CheckCircle2, AlertCircle, ArrowRight, Calendar } from 'lucide-react'
 import StatusBadge from '../common/StatusBadge.jsx'
 
 const HARI_ORDER = {
@@ -11,39 +11,57 @@ const HARI_ORDER = {
   MINGGU: 7,
 }
 
-function OverviewSection({ jadwalList = [], pengaduanList = [], onNavigate }) {
+function OverviewSection({ jadwalList = [], pengajuanMap = {}, pengaduanList = [], onNavigate }) {
   const days = ['MINGGU', 'SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU']
   const todayIndex = new Date().getDay()
   const todayName = days[todayIndex]
 
-  // Logika Jadwal Terdekat: Cari jadwal terdekat & urutkan jam paling awal di paling atas
+  // 1. Gabungkan data jadwal dengan pengajuan yang disetujui (APPROVED)
+  const jadwalDenganPerubahan = jadwalList.map((item) => {
+    const pengajuan = pengajuanMap[Number(item.jadwal_id || item.id)]
+    const isApproved = pengajuan && String(pengajuan.status).toUpperCase() === 'APPROVED'
+    return {
+      ...item,
+      pengajuan: isApproved ? pengajuan : null,
+    }
+  })
+
+  // 2. Logika Jadwal Terdekat: Menggunakan data jadwalDenganPerubahan
   const getTerdekat = () => {
-    // 1. Cari jadwal hari ini, urutkan berdasarkan jam mulai paling pagi
-    const todaySchedules = jadwalList
+    // Cari jadwal hari ini, urutkan berdasarkan jam mulai paling pagi (termasuk jam baru jika ada perubahan)
+    const todaySchedules = jadwalDenganPerubahan
       .filter((item) => item.hari === todayName)
-      .sort((a, b) => (a.jam_mulai || '').localeCompare(b.jam_mulai || ''))
+      .sort((a, b) => {
+        const jamA = a.pengajuan?.jam_mulai_baru || a.jam_mulai || ''
+        const jamB = b.pengajuan?.jam_mulai_baru || b.jam_mulai || ''
+        return jamA.localeCompare(jamB)
+      })
 
     if (todaySchedules.length > 0) {
       return {
         infoTitle: `Jadwal Hari Ini (${todayName})`,
         data: todaySchedules.slice(0, 3),
-        isToday: true
+        isToday: true,
       }
     }
 
-    // 2. Jika hari ini kosong, cari hari terdekat berikutnya (H+1 s/d H+6)
+    // Jika hari ini kosong, cari hari terdekat berikutnya (H+1 s/d H+6)
     for (let i = 1; i <= 6; i++) {
       const nextIndex = (todayIndex + i) % 7
       const nextDayName = days[nextIndex]
-      const nextSchedules = jadwalList
+      const nextSchedules = jadwalDenganPerubahan
         .filter((item) => item.hari === nextDayName)
-        .sort((a, b) => (a.jam_mulai || '').localeCompare(b.jam_mulai || ''))
+        .sort((a, b) => {
+          const jamA = a.pengajuan?.jam_mulai_baru || a.jam_mulai || ''
+          const jamB = b.pengajuan?.jam_mulai_baru || b.jam_mulai || ''
+          return jamA.localeCompare(jamB)
+        })
 
       if (nextSchedules.length > 0) {
         return {
           infoTitle: `Jadwal Terdekat Berikutnya (${nextDayName})`,
           data: nextSchedules.slice(0, 3),
-          isToday: false
+          isToday: false,
         }
       }
     }
@@ -51,7 +69,7 @@ function OverviewSection({ jadwalList = [], pengaduanList = [], onNavigate }) {
     return { infoTitle: 'Jadwal Kuliah', data: [], isToday: false }
   }
 
-  const { infoTitle, data: terdekat, isToday } = getTerdekat()
+  const { infoTitle, data: terdekat } = getTerdekat()
   const aktif = pengaduanList.filter((item) => item.status !== 'RESOLVED')
   const selesai = pengaduanList.filter((item) => item.status === 'RESOLVED')
 
@@ -132,40 +150,52 @@ function OverviewSection({ jadwalList = [], pengaduanList = [], onNavigate }) {
                   </p>
                 </div>
               ) : (
-                terdekat.map((item, idx) => (
-                  <div 
-                    key={item.jadwal_id || idx} 
-                    className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl p-3.5 border transition-all ${
-                      idx === 0 
-                        ? 'bg-orange-50/60 border-orange-200 shadow-2xs' 
-                        : 'bg-slate-50/50 border-slate-100'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        {idx === 0 && (
-                          <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded bg-[#e8521d] text-white">
-                            Terdekat
-                          </span>
-                        )}
-                        <p className="font-bold text-xs text-slate-800">{item.mata_kuliah?.nama_mk}</p>
+                terdekat.map((item, idx) => {
+                  const hasPerubahan = Boolean(item.pengajuan)
+                  const jamMulai = item.pengajuan?.jam_mulai_baru || item.jam_mulai
+                  const jamSelesai = item.pengajuan?.jam_selesai_baru || item.jam_selesai
+                  const namaRuang = item.pengajuan?.ruang_baru?.nama_ruang || item.ruang?.nama_ruang || '-'
+
+                  return (
+                    <div 
+                      key={item.jadwal_id || item.id || idx} 
+                      className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl p-3.5 border transition-all ${
+                        idx === 0 
+                          ? 'bg-orange-50/60 border-orange-200 shadow-2xs' 
+                          : 'bg-slate-50/50 border-slate-100'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          {idx === 0 && (
+                            <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded bg-[#e8521d] text-white">
+                              Terdekat
+                            </span>
+                          )}
+                          {hasPerubahan && (
+                            <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-600 text-white flex items-center gap-1">
+                              <Calendar size={10} /> Jadwal Pengganti: {item.pengajuan.tanggal_baru}
+                            </span>
+                          )}
+                          <p className="font-bold text-xs text-slate-800">{item.mata_kuliah?.nama_mk}</p>
+                        </div>
+                        <p className="flex items-center gap-2 text-[11px] text-slate-500 flex-wrap">
+                          <span className="font-mono font-semibold">{item.mata_kuliah?.kode_mk}</span> • 
+                          <span>Kelas {item.kelas}</span> • 
+                          <span className="flex items-center gap-1"><MapPin size={11} /> {namaRuang}</span>
+                        </p>
                       </div>
-                      <p className="flex items-center gap-2 text-[11px] text-slate-500">
-                        <span className="font-mono font-semibold">{item.mata_kuliah?.kode_mk}</span> • 
-                        <span>Kelas {item.kelas}</span> • 
-                        <span className="flex items-center gap-1"><MapPin size={11} /> {item.ruang?.nama_ruang || '-'}</span>
-                      </p>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-600">
+                          {item.hari}
+                        </span>
+                        <span className="text-xs font-bold text-[#e8521d] flex items-center gap-1">
+                          <Clock size={13} /> {jamMulai} - {jamSelesai}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-600">
-                        {item.hari}
-                      </span>
-                      <span className="text-xs font-bold text-[#e8521d] flex items-center gap-1">
-                        <Clock size={13} /> {item.jam_mulai} - {item.jam_selesai}
-                      </span>
-                    </div>
-                  </div>
-                ))
+                  )
+                })
               )}
             </div>
           </div>
