@@ -7,6 +7,7 @@ import {
   Building2,
   Clock,
   User,
+  Pencil,
 } from 'lucide-react'
 import Modal from '../common/Modal.jsx'
 import AlertBanner from '../common/AlertBanner.jsx'
@@ -53,8 +54,9 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
   const [submittingMk, setSubmittingMk] = useState(false)
   const [mkError, setMkError] = useState('')
 
-  // Modal Jadwal
+  // Modal Jadwal (Dipakai untuk Tambah & Edit)
   const [isJadwalModalOpen, setIsJadwalModalOpen] = useState(false)
+  const [selectedJadwalId, setSelectedJadwalId] = useState(null)
   const [jadwalForm, setJadwalForm] = useState({
     kode_mk: '',
     nomor_induk: '',
@@ -69,7 +71,39 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
 
   const [feedbackMsg, setFeedbackMsg] = useState(null)
 
-  // Submit Mata Kuliah
+  // Buka Modal dalam Mode Tambah Jadwal Baru
+  const handleOpenCreateJadwal = () => {
+    setSelectedJadwalId(null)
+    setJadwalError('')
+    setJadwalForm({
+      kode_mk: '',
+      nomor_induk: '',
+      ruang_id: '',
+      kelas_id: '',
+      hari: 'SENIN',
+      jam_mulai: '08:00',
+      jam_selesai: '10:30',
+    })
+    setIsJadwalModalOpen(true)
+  }
+
+  // Buka Modal dalam Mode Edit Jadwal
+  const handleOpenEditJadwal = (item) => {
+    setSelectedJadwalId(item.jadwal_id)
+    setJadwalError('')
+    setJadwalForm({
+      kode_mk: item.mata_kuliah?.kode_mk || '',
+      nomor_induk: item.dosen?.nomor_induk || '',
+      ruang_id: String(item.ruang?.id || ''),
+      kelas_id: String(item.kelas_id || ''),
+      hari: item.hari || 'SENIN',
+      jam_mulai: item.jam_mulai || '08:00',
+      jam_selesai: item.jam_selesai || '10:30',
+    })
+    setIsJadwalModalOpen(true)
+  }
+
+  // Submit Tambah Mata Kuliah Baru
   const handleSubmitMk = async (e) => {
     e.preventDefault()
     setMkError('')
@@ -95,38 +129,66 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
     }
   }
 
-  // Submit Jadwal Kuliah
+  // Submit Jadwal Kuliah (Handle Tambah & Edit dengan Validasi Client-side)
   const handleSubmitJadwal = async (e) => {
     e.preventDefault()
     setJadwalError('')
+
+    // Validasi Instan di Frontend: Cek duplikasi matkul pada kelas yang sama
+    const isDuplicate = jadwalList.some((item) => {
+      const isSameMk = item.mata_kuliah?.kode_mk === jadwalForm.kode_mk
+      const isSameKelas = String(item.kelas_id) === String(jadwalForm.kelas_id)
+      const isOtherId = selectedJadwalId ? item.jadwal_id !== selectedJadwalId : true
+
+      return isSameMk && isSameKelas && isOtherId
+    })
+
+    if (isDuplicate) {
+      setJadwalError('Mata kuliah ini sudah memiliki jadwal pada kelas yang dipilih!')
+      return
+    }
+
     setSubmittingJadwal(true)
 
-    try {
-      await api.post('/api/jadwal', {
-        kode_mk: jadwalForm.kode_mk,
-        nomor_induk: jadwalForm.nomor_induk,
-        ruang_id: Number(jadwalForm.ruang_id),
-        kelas_id: Number(jadwalForm.kelas_id),
-        hari: jadwalForm.hari,
-        jam_mulai: jadwalForm.jam_mulai,
-        jam_selesai: jadwalForm.jam_selesai,
-      })
+    const payload = {
+      kode_mk: jadwalForm.kode_mk,
+      nomor_induk: jadwalForm.nomor_induk,
+      ruang_id: Number(jadwalForm.ruang_id),
+      kelas_id: Number(jadwalForm.kelas_id),
+      hari: jadwalForm.hari,
+      jam_mulai: jadwalForm.jam_mulai,
+      jam_selesai: jadwalForm.jam_selesai,
+    }
 
-      setFeedbackMsg({
-        type: 'success',
-        title: 'Jadwal Kuliah Berhasil Ditambahkan',
-        message: `Jadwal perkuliahan untuk kelas ${kelasList.find((kelas) => kelas.id === Number(jadwalForm.kelas_id))?.nama_kelas} berhasil ditambahkan ke katalog perkuliahan.`,
-      })
+    try {
+      if (selectedJadwalId) {
+        // Mode Update
+        await api.patch(`/api/jadwal/${selectedJadwalId}`, payload)
+        setFeedbackMsg({
+          type: 'success',
+          title: 'Jadwal Kuliah Berhasil Diperbarui',
+          message: 'Perubahan data jadwal perkuliahan berhasil disimpan.',
+        })
+      } else {
+        // Mode Create
+        await api.post('/api/jadwal', payload)
+        setFeedbackMsg({
+          type: 'success',
+          title: 'Jadwal Kuliah Berhasil Ditambahkan',
+          message: `Jadwal perkuliahan untuk kelas ${kelasList.find((k) => k.id === Number(jadwalForm.kelas_id))?.nama_kelas || ''} berhasil ditambahkan.`,
+        })
+      }
+
       setIsJadwalModalOpen(false)
       onRefresh()
     } catch (err) {
-      setJadwalError(err.response?.data?.message || 'Gagal menambahkan jadwal perkuliahan.')
+      setJadwalError(err.response?.data?.message || 'Gagal menyimpan data jadwal perkuliahan.')
     } finally {
       setSubmittingJadwal(false)
     }
   }
 
-  // Filter jadwal
+  // Filter jadwal berdasarkan Hari dan Query Pencarian
   const filteredJadwal = jadwalList.filter((item) => {
     const matchHari = filterHari === '' || item.hari === filterHari
     const q = searchQuery.toLowerCase()
@@ -143,6 +205,7 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
   return (
     <div className="space-y-6">
       {kelasError && <AlertBanner type="error" message={kelasError} />}
+      
       {/* Toast Feedback */}
       {feedbackMsg && (
         <AlertBanner
@@ -182,7 +245,7 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
             </button>
             <button
               type="button"
-              onClick={() => setIsJadwalModalOpen(true)}
+              onClick={handleOpenCreateJadwal}
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#e8521d] hover:bg-[#d94716] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
             >
               <Plus size={16} />
@@ -193,7 +256,7 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
 
         {/* Filters */}
         <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-          {/* Hari filter pills */}
+          {/* Filter Hari */}
           <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100/80 w-full sm:w-auto overflow-x-auto">
             <button
               type="button"
@@ -222,7 +285,7 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
             ))}
           </div>
 
-          {/* Search box */}
+          {/* Search Box */}
           <div className="relative w-full sm:w-72">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -235,7 +298,7 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
           </div>
         </div>
 
-        {/* Jadwal Table */}
+        {/* Tabel Jadwal Perkuliahan */}
         {filteredJadwal.length === 0 ? (
           <div className="text-center py-12 border border-dashed border-slate-200 rounded-2xl">
             <CalendarDays size={40} className="mx-auto text-slate-300 mb-2" />
@@ -254,6 +317,7 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
                   <th className="px-3 py-3">Kelas</th>
                   <th className="px-4 py-3">Lokasi Ruang</th>
                   <th className="px-4 py-3">Dosen Pengampu</th>
+                  <th className="px-4 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -280,7 +344,7 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
                     </td>
                     <td className="px-3 py-3.5 font-bold text-slate-700">
                       <span className="px-2 py-1 rounded-lg bg-orange-50 text-[#e8521d] border border-orange-100 font-mono text-[11px]">
-                {j.kelas}
+                        {j.kelas}
                       </span>
                     </td>
                     <td className="px-4 py-3.5">
@@ -300,6 +364,15 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
                       <div className="text-[11px] text-slate-500">
                         {j.dosen?.email_dosen}
                       </div>
+                    </td>
+                    <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditJadwal(j)}
+                        className="inline-flex items-center gap-1 px-1.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:border-[#e8521d] hover:text-[#e8521d] text-xs font-bold transition-colors cursor-pointer shadow-xs"
+                      >
+                        <Pencil size={12} />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -383,12 +456,16 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
         </form>
       </Modal>
 
-      {/* Modal Tambah Jadwal Kuliah */}
+      {/* Modal Tambah / Edit Jadwal Kuliah */}
       <Modal
         isOpen={isJadwalModalOpen}
         onClose={() => setIsJadwalModalOpen(false)}
-        title="Tambah Jadwal Perkuliahan Utama"
-        subtitle="Petakan kelas ke ruangan dan waktu perkuliahan"
+        title={selectedJadwalId ? 'Edit Jadwal Perkuliahan' : 'Tambah Jadwal Perkuliahan Utama'}
+        subtitle={
+          selectedJadwalId
+            ? 'Perbarui pemetaan kelas, ruangan, atau waktu perkuliahan'
+            : 'Petakan kelas ke ruangan dan waktu perkuliahan'
+        }
       >
         <form onSubmit={handleSubmitJadwal} className="space-y-4">
           {jadwalError && (
@@ -407,7 +484,11 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:border-[#e8521d] focus:outline-none"
               >
                 <option value="">Pilih Mata Kuliah</option>
-                {mataKuliahList.map((mk) => <option key={mk.kode_mk} value={mk.kode_mk}>{mk.kode_mk} - {mk.nama_mk}</option>)}
+                {mataKuliahList.map((mk) => (
+                  <option key={mk.kode_mk} value={mk.kode_mk}>
+                    {mk.kode_mk} - {mk.nama_mk}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -422,7 +503,11 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:border-[#e8521d] focus:outline-none"
               >
                 <option value="">Pilih Dosen</option>
-                {dosenList.map((dosen) => <option key={dosen.nomor_induk} value={dosen.nomor_induk}>{dosen.nomor_induk} - {dosen.nama}</option>)}
+                {dosenList.map((dosen) => (
+                  <option key={dosen.nomor_induk} value={dosen.nomor_induk}>
+                    {dosen.nomor_induk} - {dosen.nama}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -460,7 +545,9 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
               >
                 <option value="">{kelasList.length ? 'Pilih Kelas' : 'Belum ada kelas tersedia'}</option>
                 {kelasList.map((kelas) => (
-                  <option key={kelas.id} value={kelas.id}>{kelas.nama_kelas}</option>
+                  <option key={kelas.id} value={kelas.id}>
+                    {kelas.nama_kelas}
+                  </option>
                 ))}
               </select>
             </div>
@@ -522,7 +609,11 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
               disabled={submittingJadwal}
               className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#e8521d] hover:bg-[#d94716] transition-colors disabled:opacity-60 cursor-pointer"
             >
-              {submittingJadwal ? 'Menyimpan...' : 'Simpan Jadwal Kuliah'}
+              {submittingJadwal
+                ? 'Menyimpan...'
+                : selectedJadwalId
+                ? 'Simpan Perubahan'
+                : 'Simpan Jadwal Kuliah'}
             </button>
           </div>
         </form>
@@ -532,4 +623,3 @@ function JadwalSection({ jadwalList = [], ruangList = [], onRefresh }) {
 }
 
 export default JadwalSection
-
